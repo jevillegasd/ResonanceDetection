@@ -3,8 +3,8 @@ function result = runSweep(g,scanData)
     if lockStat, send(g,'lock 0,1234');end
 
     send(g,"outp0 1");          %Turn on laser
-    send(g,'wav:swe:llog 1');   %Starts the logging of wavelength data          
     send(g,'sens1:chan1:func:stat logg,star');  %Starts the logging of power data  
+    send(g,'wav:swe:llog 1');   %Starts the logging of wavelength data           
     send(g,'sour0:wav:swe 1'); sweeping = 1;    %Runs the sweep    
 
     while sweeping % Wait for sweep to finish
