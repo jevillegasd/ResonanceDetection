@@ -1,68 +1,67 @@
-function [S, O, FWHM] = ringResonatorfunc(Data,pks,locs,param)
+function [O] = ringResonatorfunc(Data,pks,locs,param)
 
 %Extract ring resonator parameeters from power measuremnt data in dBm
     %Juan Esteban Villegas, Masdar Institute, 2018
-     r = param(2); pt = param(3); windowSc = param(4);
+    %edited by Hadi Assadi NYUAD, summer 2019
+    % param = [S, windowSc, n_eff]
+    % S = the length of resonanace cavity 
+    % windowSc = 0.1; %scale of bandwidth to analyze one resonance (FSR*windowSc)
+    % n_eff =  effective index of refraction 
+     S = param(1);  windowSc = param(2); n_eff = param(3); 
     
     %% Initialize outputs
     l = length(pks);
-    FSR = zeros(1,l);
-    Q = FSR; FWHM = FSR; ng = FSR; alpha = FSR; alphadB = FSR;
-    %% Measurement of FSR for all the data
-    for i = 1:l
-       % F = Data{i};
+    empty = zeros(1,l); 
+    Q = empty; FWHM = empty; ng = empty; alpha = empty; alphadB = empty; FSR = empty;
+   
+  % assigning the data to x and y axes      
         D = cell2mat(Data);
         E = D(:,2);
         x = D(:,1);
-        %E(E==min(E)) = mean(E); %Clear zero power peaks
         
-        %% Estimate the FSR and peak that corresponds to an objective peak
+   %looping through the data for each peak      
+      
+   %% select the peak in succession
         if ~isempty(pks)
-             peakloc = locs(i);
-             lambda0 = x(peakloc);
-             FSR = diff(x(locs));   % distance of peaks    
-             FSR(end+1)= FSR(length(FSR)); % appending fsr's last element to itself
-             FSR(i); %= dv(min(locm,length(dv))); 
+            if l == 1
+             FSR = (x(locs(1)))^2/S*n_eff^2;
+            else
+                %Calculate the FSR as the differenes in the peak
+                %wavelengths
+                FSR = diff(x(locs));   % finds the distance between peaks    
+                FSR(end+1)= FSR(length(FSR)); % appending fsr's last element to itself to make it of equal length to peaks
+            end  
+            
+            for i = 1:l  
+             lambda0 = x(locs(i));
+             
+             %% Extract the region around the interested resonance peak
+                dlambda = FSR(i)*windowSc;
+                minx = lambda0 - dlambda/2;  maxx = lambda0 + dlambda/2; 
+                x2 = x(x>minx & x<maxx);
+                clear E2
+                E2 = E(x>minx & x <maxx);
+
+             %% Measure the FWHM at the resonance using the function below 
+                 FWHM(i) = getFWHM([x2,E2],FSR(i));
+             %% Compute resonator parameters
+                Q(i) = lambda0/FWHM(i);
+                ng(i)= lambda0^2/(S*FSR(i));
+                alpha(i) = 2*pi*ng(i)/lambda0^2*FWHM(i)*1e9; %power fraction per m
+                alphadB(i) = 0.1*alpha(i)/log(10); %
+
+            end
+             
         else
             disp 'No sufficent peaks found, using previous FSR'
-            FSR(i) = FSR(i-1);
-            [maxy, locm] = max(E);
-            lambda0 = x(locm);
-         end
-         %% Extract the region around the interested resonance
-        dlambda = FSR(i)*windowSc;
-        minx = lambda0 - dlambda/2;  maxx = lambda0 + dlambda/2; 
-        x2 = x(x>minx & x<maxx);
-        clear E2
-        E2 = E(x>minx & x <maxx);
-        
-        %% Measure the FWHM at the resonance
-       % subplot(2,1,2); cla; hold on;
-      %  FWHM(i) = getFWHM([x2,E2],FSR(i));
-         FWHM(i) = getFWHM([x2,E2],FSR(i));
-      %  hold off;
-        %% Compute resonator parameters
-        
-        Q(i) = lambda0/FWHM(i);
-        ng(i)= lambda0^2/(2*pi*r*FSR(i));
-        alpha(i) = 2*pi*ng(i)/lambda0^2*FWHM(i)*1e9; %power fraction per m
-        alphadB(i) = 0.1*alpha(i)/log(10); %
-        
-      %  disp(strcat('FSR (nm):',num2str(FSR(i)),'nm / FWHM (nm):',num2str(FWHM(i))));
-      %  pause
-    end
+         
+        end
     
     %Fill output variables
-    S.FSR = FSR;     S.FWHM = FWHM;
+    O.FSR = FSR;     O.FWHM = FWHM;
     O.Q = Q;     O.ng = ng;     O.alpha = alpha;     O.alphadB = alphadB;
 end
 
-% Data = {TE1,TE2,TE3,TE4,TE5}
-% param = [1556, 15e3, 15,  0.1]
-% param = [cenWav, r, pt,  windowSc]
-%     cenWav = 1570;  %Resonance frequency around which analyze the Ring  
-%     r = 15e3;% ring resonator radius in nm
-%     pt = 15; %Resonance peak prominence threshold
 %     windowSc = 0.1; %scale of bandwidth to analyze one resonance (FSR*windowSc)
 
 function[fwhm]=getFWHM(data,FSR)
@@ -86,19 +85,15 @@ function[fwhm]=getFWHM(data,FSR)
     up = [maxny+20, 1, pi/20]; low = [maxny, 0,-pi/20]; start = [maxny+10, 0.99, 0];
     myfittype = fittype(equ,'independent',{'phi'});  %this is a fitting the data to the lorenzian-cauchy distribution  
     opts = fitoptions( 'Method', 'NonlinearLeastSquares','Upper',up,'Lower',low,'StartPoint',start );
-    
-  %  plot(x,ny(:,2)+min(y)); grid on; hold on; %Plot input spectrum
-          
+      
      phi = 2*pi/FSR*ny(:,1);         %Phase shift
      myfit1 = fit(phi,ny(:,2),myfittype,opts);
      a = myfit1.a; fitmax = myfit1.I;
      newy1 = fitmax./(1+(4*a/(1-a)^2).*(sin(phi/2)).^2);
-   %  plot(x,newy1+my); grid on; %Plot fitted spectrum
      
      %% Get the FWHM of the fitted function plot
      x2 = x(x>cp-FSR/2&x<cp+FSR/2); y2 = newy1(x>cp-FSR/2&x<cp+FSR/2); %Measure FWHM only in the max peak (if more than one)
      [fwhm, sp]= find_fwhm([x2 y2]);     
-   %  plot(sp,[fitmax-3+my fitmax-3+my],'marker','o');
 end
 
 function[fwhm, sp]=find_fwhm(data)
