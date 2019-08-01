@@ -1,9 +1,15 @@
-function [pks,wav,FSR]=getPeaks(data,filterStat,filterParam)
-%% Function to find the peaks from on a plot
+function [pks,lambda]=getPeaks(data,filterStat,filterParam)
+%Function to find the peaks of a spectrum using multiple options of filters,
+%namely: MinPeakHeight, MinPeakProminence, MaxPeakWidth, MinPeakWidth
+%and MinPeakDistance.
+%Part of Spectral Measurements
+%Copyright (C) NYU 2019
+%Developped by Juan Villegas
+    if nargin ~= 3, return; end
     if isempty (data)    
      return         
     end
-    pks = {}; wav= {}; FSR = {};
+    pks = []; lambda= [];
     E = data(:,2);
     x = data(:,1);
 
@@ -27,11 +33,13 @@ function [pks,wav,FSR]=getPeaks(data,filterStat,filterParam)
         if (factive)
             if fstat(1), Height = fparam(1); else, Height = nullHeight; end 
             if fstat(2), Prominence = fparam(2); else, Prominence = nullProminence; end            
-            if fstat(3),   MaxWidth = round (fparam(3)/Distunit); else, MaxWidth = nullMaxWidth;   end
-            if fstat(4),  MinWidth = round (fparam(4)/Distunit); else, MinWidth = nullMinWidth;  end
+            if fstat(3), MaxWidth = round (fparam(3)/Distunit); else, MaxWidth = nullMaxWidth;   end
+            if fstat(4), MinWidth = round (fparam(4)/Distunit); else, MinWidth = nullMinWidth;  end
             if fstat(5), Distance = round (fparam(5)/Distunit); else, Distance = nullDistance;   end
 
-            [~,locs]= findpeaks(E,'MinPeakHeight',Height,'MinPeakProminence', Prominence,'MaxPeakWidth', MaxWidth, 'MinPeakWidth', MinWidth, 'MinPeakDistance', Distance,'Annotate','extents');
+            [~,locs]= findpeaks(E,'MinPeakHeight',Height,'MinPeakProminence',...
+                Prominence,'MaxPeakWidth', MaxWidth, 'MinPeakWidth', ...
+                MinWidth, 'MinPeakDistance', Distance,'Annotate','extents');
             
             if length(locs)>maxnPeaks && ~isempty(locs)
                 %Tries to invert the field and find the peaks
@@ -40,15 +48,14 @@ function [pks,wav,FSR]=getPeaks(data,filterStat,filterParam)
             
            
             if ~isempty(locs)>0
-                wav{j} = x(locs);
+                lambda{j} = x(locs);
                 if length(locs)>1
-                    dv =  diff(wav{j});   % Free spectral range (distance between peaks.   
+                    dv =  diff(lambda{j});   % Free spectral range (distance between peaks.   
                     dv(end+1)=dv(length(dv)); %appending FSR's last element to itself
                 else
                     dv = 0;
                 end
                 pks{j} = E(locs);
-                FSR{j} = dv;
             end
         end
     end 

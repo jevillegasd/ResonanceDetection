@@ -1,6 +1,22 @@
+%Prepares a keysight/agilent instrument to run a continous sweep.
+%Part of spectral measurements
+%Copyright NYU 2019
+%Developed by Juan Villegas
+%01/06/2019
+
 function [nData,sweepP] = prepareScan(g,scanData)
+
+    % Generally, a continuous sweep can only be started if:
+    % the trigger frequency, derived from the sweep speed and sweep step, is <= 40kHz
+    % the number of triggers, calculated from the sweep span and sweep span, is <=100001
+    % the start wavelength is less than the stop wavelength.
+    % In addition, a continuous sweep with lambda logging requires:
+    % the trigger output to be set to step finished
+    % modulation set to coherence control or off.
+
     chan = scanData.channel;
     nData = scanData;
+    
     %% Prepare for a continous lambda scan
     send(g,'sour0:am:stat 0');         %Turn off the source modulation
     send(g,'sour0:wav:swe:mode CONT'); %Set the sweep mode to continous
@@ -17,7 +33,7 @@ function [nData,sweepP] = prepareScan(g,scanData)
         send(g,"sens1:chan"+num2str(chan,'%2.0f')+":pow:unit dbm"); 
         command = "wav:swe:pmax? "+num2str(scanData.starWav*1e9,'%4.1f')+"nm,"+...
         num2str(scanData.stopWav*1e9,'%4.1f')+"nm";
-        fprintf(g,command);pmax = 10*log10(str2num(fscanf(g))*1e3);
+        pmax = 10*log10(str2num(send(g,command)*1e3));
         pwr = min(scanData.power,pmax);
 
         fprintf(g,"sour0:pow "+num2str(pwr,'%2.1f'));
@@ -57,7 +73,7 @@ function [nData,sweepP] = prepareScan(g,scanData)
         if avgTime < minAvgTime
            warning('The resulting averaging time is too low, automatically decreasing the sweep speed to adjust');
            avgTime = minAvgTime;
-           sweepSpeed = (nData.stopWav - nData.starWav)/avgTime;
+           sweepSpeed = (nData.stopWav - nData.starWav)/avgTime; %Change to discrete options
         end
         
         sweepP.avgTime = max(floor(avgTime*1000)/1000,0.001); %Floor to nearest 1 ms
@@ -66,8 +82,6 @@ function [nData,sweepP] = prepareScan(g,scanData)
         send(g,"sour0:wav:swe:spe "+num2str(sweepSpeed*1e9,'%3.2f')+"nm/s");
         nData.sweepSpeed = str2num(send(g,"sour0:wav:swe:spe?"));
 
-        
-        
         %Set the averaging time of the sensor
         send(g,"sens1:chan"+num2str(chan,'%2.0f')+":pow:atim "+num2str(sweepP.avgTime,'%+2.4f')+"s");
         nData.avgTime = str2num(send(g,"sens1:chan"+num2str(chan,'%2.0f')+":pow:atim?"));
@@ -80,7 +94,21 @@ function [nData,sweepP] = prepareScan(g,scanData)
         send(g,'trig0:conf LOOP');          %%
         send(g,'trig0:outp STF');           %Set the trigger at every  sweep step and Arms module
 
-        %Start the logging of both nthe sensor and the logg
+%         You must prearm a wavelength sweep or a measurement function before an action can be triggered:
+%         First, set the incoming trigger response.
+%         Then:
+%         prearm a wavelength sweep using [:SOURce[n]][:CHANnel[m]]:WAVelength:SWEep:[STATe] on
+%         page 176. The wavelength of the tunable laser module is set to the start wavelength of the sweep.
+%         or prearm a measurement function using :SENSe[n][:CHANnel[m]]:FUNCtion:STATe on page 104.
+%         NOTE: If a trigger signal arrives at the Input Trigger Connector at the same time that the
+%         :SENSe[n][:CHANnel[m]]:FUNCtion:STATe on page 104 command is executed, the first measurement value is
+%         invalid. You should always discard the first measurement value in this case.
+%         The module performs the appropriate action when it is triggered.
+        
+        
+        
+        %Start the logging of both nthe sensor and the logg NOT WISE, CHECK
+        %IT
         send(g,"sens1:chan"+num2str(chan,'%2.0f')+":func:stat logg,stop"); %Makes sure to stop previous functions
         
         sweepP.error = send(g,'sour0:wav:swe:chec?');

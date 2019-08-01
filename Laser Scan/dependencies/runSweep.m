@@ -1,3 +1,9 @@
+%Runs a sweep on a keysight/agilent Lightwave measurement system.
+%Part of Spectral Measurements
+%Copyright NYU 2019
+%Developed by Juan Villegas
+%06/01/2019
+
 function result = runSweep(g,scanData)
     lockStat = str2double(send(g,'lock?'));  % Unlock laser
     if lockStat, send(g,'lock 0,1234');end
@@ -19,7 +25,8 @@ function result = runSweep(g,scanData)
     pow(pow==0)= minP;
     send(g,'sens1:chan1:func:stat logg, stop'); 
     powdb = 10*log10(pow*1000);
-    powdb(powdb < scanData.range-60) = scanData.range-60;
+    %Filter any "zeroed" data points based on the range
+    powdb(powdb < scanData.range-60) = scanData.range-60; 
 
     result = [wav,powdb];
     if lockStat, send(g,'lock 1,1234');end

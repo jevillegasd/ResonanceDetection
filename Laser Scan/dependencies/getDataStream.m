@@ -1,4 +1,5 @@
 function data = getDataStream(fid,command,strPrecision)
+%%Read IEEE littl;e indian stream of data
     if strcmp(strPrecision, 'float')
         precision = 4;
     else
