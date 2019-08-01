@@ -44,10 +44,8 @@ function [pks,lambda]=getPeaks(data,filterStat,filterParam)
             [~,locs]= findpeaks(-E,'MinPeakHeight',-Height,'MinPeakProminence', Prominence,'MaxPeakWidth', MaxWidth, 'MinPeakWidth', MinWidth, 'MinPeakDistance', Distance,'Annotate','extents');
         end
 
-
         if ~isempty(locs)>0
-            lambda = x(locs);
-            
+            lambda = x(locs); 
             pks = E(locs);
         end
     end
@@ -55,11 +53,3 @@ function [pks,lambda]=getPeaks(data,filterStat,filterParam)
 end
 
 
-function process2
-    if length(locs)>1
-        dv =  diff(lambda);   % Free spectral range (distance between peaks.   
-        dv(end+1)=dv(length(dv)); %appending FSR's last element to itself
-    else
-        dv = 0;
-    end
-end
