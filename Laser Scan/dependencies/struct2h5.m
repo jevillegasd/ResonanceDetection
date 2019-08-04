@@ -6,10 +6,52 @@ function struct2h5(file, dataset, struct)
 %containing the mentioned variable types.
 %Part of Spectral Measurements
 %Copyright NYU 2019
+%Developed by Juan Villegas, 08/01/2019
+    if nargin == 2
+        dataset = '/dataset';
+    end  
+    
+    if ~isempty(struct)
+        if isstruct(struct)
+            fn = fieldnames(struct);
+            for k=1:numel(fn)
+                field = struct.(fn{k});
+                dataset2 = [dataset,'/',fn{k}];
+                struct2h5(file, dataset2,field);
+            end
+        elseif iscell(struct)
+            for i = 1: length(struct)
+                datasetn = [dataset,'/',num2str(i)];
+                struct2h5(file,datasetn,struct{i});
+            end
+        elseif isstring(struct) || ischar(struct)
+            str2h5(file,dataset,struct);
+        elseif isnumeric(struct) || islogical(struct)
+            num2h5(file,dataset,struct)
+        else
+            %Variable type not supported
+        end
+    else
+        h5create(file,dataset,1);
+    end
+        
+end
+
+
+
+function struct2h52(file, dataset, struct)
+%Recursive function to write structures in h5 format.
+%The function will also iterate through 1D cell arrays and save as
+%individual datasets.
+%Only supported file types int, double, struct char and strings, and cells
+%containing the mentioned variable types.
+%Part of Spectral Measurements
+%Copyright NYU 2019
 %Develloped by Juan Villegas, 08/01/2019
     if nargin == 2
         dataset = '/dataset';
     end  
+    
     fn = fieldnames(struct);
     for k=1:numel(fn)
         field = struct.(fn{k});
@@ -21,13 +63,27 @@ function struct2h5(file, dataset, struct)
                 if iscell(field)
                     for i = 1: length(field)
                         datasetn = [dataset2,'/',num2str(i)];
-                        struct2h5(file,datasetn,field{i});
+                        if isstruct(field{i})
+                            struct2h5(file,datasetn,field{i});
+                        elseif isstring(field) || ischar(field)
+                            str2h5(file,datasetn,field);
+                        elseif isnumeric(field) || islogical(field)
+                            field = +field; %Convert logical in numeric values
+                            h5create(file,datasetn,size(field));
+                            h5write(file,datasetn,field);
+                        else
+                            %Variable type not supported
+                        end
                     end
                 elseif isstring(field) || ischar(field)
                     str2h5(file,dataset2,field);
-                else
+                elseif isnumeric(field) || islogical(field)
+                    
+                    field = +field; %Convert logical in numeric values
                     h5create(file,dataset2,size(field));
                     h5write(file,dataset2,field);
+                else
+                    %Variable type not supported
                 end
             else
                 h5create(file,dataset2,1);
@@ -36,6 +92,12 @@ function struct2h5(file, dataset, struct)
     end   
 end
 
+
+function num2h5(file,dataset,field)
+    field = +field; %Convert logical in numeric values
+    h5create(file,dataset,size(field));
+    h5write(file,dataset,field);
+end
 
 function str2h5(filename,dataset,field)
 %This function uses low level H5 calls to write char and strings to H5 files.

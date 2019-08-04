@@ -1,7 +1,7 @@
 function measurement = newMeasurement(spectra)
 %This functions creates a new measurement data class an initilizes all its
 %members, in case a spectra is input it saves that spectra to the variable
-%measurement.spectra. 
+%measurement.spectra.
 %Part of Spectral Measurements
 %Copyright (C) NYU 2019
 %Developed by Juan Villegas, 8/01/2019
@@ -23,18 +23,25 @@ function measurement = newMeasurement(spectra)
             measurement.spectra = spectra;
                 analysisParam = {};
                 analysisParam.filter = {};  %Peak detection filters
-                analysisParam.type = "Not defined";    %Type of resonator
-                analysisParam.d = 0;        %Cavity length or branch difference 
+                analysisParam.type = 'Not defined';    %Type of resonator
+                analysisParam.L = 0;        %Cavity length or branch difference 
                 analysisParam.ne = 1;       %Effective index of the waveguide used
+                analysisParam.windowSc = 0; %Fraction of data to make the Lorentizan fit (realtive to the FSR)_
             measurement.analysisParam = analysisParam;
                 peakAnalysis = {};
                 peakAnalysis.nop = 0;       %Number of peaks found
+                peakAnalysis.pks = [];
                 peakAnalysis.wav = [];
                 peakAnalysis.fsr = [];
                 peakAnalysis.fwhm = [];
                 peakAnalysis.q = [];
                 peakAnalysis.ng = [];
                 peakAnalysis.a =[];
+                peakAnalysis.adB =[];
+                    filter = {};
+                    filter.stat = [];
+                    filter.param = [];
+                peakAnalysis.filter = filter;
             measurement.peakAnalysis =peakAnalysis;
                 var = [0,0,0];
             measurement.var = var;

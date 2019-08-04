@@ -1,4 +1,4 @@
-function [peakAnalysis] = resonanceAnalysis(data,lambda0,param)
+function [peakAnalysis] = resonanceAnalysis(data,pks,lambda0,param)
 %Extract ring resonator parameeters from power measuremnt data in dBm
 %Juan Esteban Villegas, Masdar Institute, 2018
 %Modified to fit the variable types in Spectral Measurements
@@ -19,6 +19,9 @@ function [peakAnalysis] = resonanceAnalysis(data,lambda0,param)
 %         alphadB[] =alphadB;      
     L = param(1)*1e-9; n_g = param(2); windowSc = param(3);    
     npeaks = length(lambda0); %Number of peaks
+    peakAnalysis.nop = npeaks;
+    peakAnalysis.pks = pks; peakAnalysis.wav = lambda0;
+    
     FSR = zeros(1,npeaks);
     Q = FSR; FWHM = FSR; ng = FSR; alpha = FSR; alphadB = FSR;   
     D = data; E = D(:,2); x = D(:,1);
@@ -45,8 +48,8 @@ function [peakAnalysis] = resonanceAnalysis(data,lambda0,param)
 
             %% Measure the FWHM at the resonance
             [FWHM(i),fwhm_line] = getFWHM([x2,E2],FSR(i));
-            figure(1); hold on; plot(data(:,1),data(:,2));
-            plot(fwhm_line(1,:),fwhm_line(2,:)); hold off
+%             figure(1); hold on; plot(data(:,1),data(:,2));
+%             plot(fwhm_line(1,:),fwhm_line(2,:)); hold off
             
             %% Compute resonator parameters
             Q(i) = lambda0(i)/FWHM(i);
@@ -56,17 +59,14 @@ function [peakAnalysis] = resonanceAnalysis(data,lambda0,param)
         end
 
         %Fill output variables
-        peakAnalysis.nop = npeaks;
-        peakAnalysis.wav = lambda0;
         peakAnalysis.fsr = FSR;
         peakAnalysis.fwhm = FWHM;
         peakAnalysis.q = Q;
         peakAnalysis.ng = ng;
         peakAnalysis.a =alpha;
-        peakAnalysis.alphadB =alphadB;
+        peakAnalysis.adB =alphadB;
     else
         peakAnalysis = {};
-        peakAnalysis.nop = 0;       %Number of peaks found
         peakAnalysis.wav = [];
         peakAnalysis.fsr = [];
         peakAnalysis.fwhm = [];
