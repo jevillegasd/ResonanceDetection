@@ -29,69 +29,13 @@ function struct2h5(file, dataset, struct)
         elseif isnumeric(struct) || islogical(struct)
             num2h5(file,dataset,struct)
         else
-            %Variable type not supported
+            warning(['Error with dataset <',dataset,'>: Variable type not supported.']);
         end
     else
         h5create(file,dataset,1);
     end
         
 end
-
-
-
-function struct2h52(file, dataset, struct)
-%Recursive function to write structures in h5 format.
-%The function will also iterate through 1D cell arrays and save as
-%individual datasets.
-%Only supported file types int, double, struct char and strings, and cells
-%containing the mentioned variable types.
-%Part of Spectral Measurements
-%Copyright NYU 2019
-%Develloped by Juan Villegas, 08/01/2019
-    if nargin == 2
-        dataset = '/dataset';
-    end  
-    
-    fn = fieldnames(struct);
-    for k=1:numel(fn)
-        field = struct.(fn{k});
-        dataset2 = [dataset,'/',fn{k}];
-        if( isstruct(field) )
-            struct2h5(file, dataset2,field);
-        else
-            if ~isempty(field)
-                if iscell(field)
-                    for i = 1: length(field)
-                        datasetn = [dataset2,'/',num2str(i)];
-                        if isstruct(field{i})
-                            struct2h5(file,datasetn,field{i});
-                        elseif isstring(field) || ischar(field)
-                            str2h5(file,datasetn,field);
-                        elseif isnumeric(field) || islogical(field)
-                            field = +field; %Convert logical in numeric values
-                            h5create(file,datasetn,size(field));
-                            h5write(file,datasetn,field);
-                        else
-                            %Variable type not supported
-                        end
-                    end
-                elseif isstring(field) || ischar(field)
-                    str2h5(file,dataset2,field);
-                elseif isnumeric(field) || islogical(field)
-                    
-                    field = +field; %Convert logical in numeric values
-                    h5create(file,dataset2,size(field));
-                    h5write(file,dataset2,field);
-                else
-                    %Variable type not supported
-                end
-            else
-                h5create(file,dataset2,1);
-            end
-        end
-    end   
-end
-
 
 function num2h5(file,dataset,field)
     field = +field; %Convert logical in numeric values

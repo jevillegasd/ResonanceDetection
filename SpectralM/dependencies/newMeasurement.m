@@ -20,6 +20,7 @@ function measurement = newMeasurement(spectra)
                 sweepParam.sweepSpeed = 0;
                 sweepParam.range = round(max(spectra(:,1)),-1);
             measurement.sweepParam=sweepParam;
+            s = size(spectra);
             measurement.spectra = spectra;
                 analysisParam = {};
                 analysisParam.filter = {};  %Peak detection filters
