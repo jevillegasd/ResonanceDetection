@@ -26,7 +26,7 @@ function struct = h52struct(file, loc)
         for i =  1: length(hinfo.Datasets)
             attnam = hinfo.Datasets(i).Name;
             attloc = [loc , '/',attnam];
-            attval = h5read(file,attloc);   
+            attval = h5read(file,attloc);
             struct.(attnam) = attval;
         end
     end
