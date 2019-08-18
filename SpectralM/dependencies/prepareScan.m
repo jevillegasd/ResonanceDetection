@@ -33,7 +33,7 @@ function [nData,sweepP] = prepareScan(g,scanData)
         send(g,"sens1:chan"+num2str(chan,'%2.0f')+":pow:unit dbm"); 
         command = "wav:swe:pmax? "+num2str(scanData.starWav*1e9,'%4.1f')+"nm,"+...
         num2str(scanData.stopWav*1e9,'%4.1f')+"nm";
-        pmax = 10*log10(str2num(send(g,command)*1e3));
+        pmax = 10*log10(str2num(send(g,command))*1e3);
         pwr = min(scanData.power,pmax);
 
         fprintf(g,"sour0:pow "+num2str(pwr,'%2.1f'));
@@ -46,7 +46,7 @@ function [nData,sweepP] = prepareScan(g,scanData)
             
         %Set the sweep step size in nm 
         fprintf(g,"wav:swe:step "+num2str(scanData.step*1e9,'%2.3f')+"nm");     pause(0.1);
-        fprintf(g,"wav:swe:step?");nData.step = str2num(fscanf(g));
+        nData.step = str2num(send(g,"wav:swe:step?"));
 
         %Set the number of cycles
         send(g,'wav:swe:cycl 1');
