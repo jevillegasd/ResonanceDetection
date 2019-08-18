@@ -29,8 +29,8 @@ function [peakAnalysis] = resonanceAnalysis(data,pks,lambda0,param)
     if ~isempty(lambda0)
         %% Measurement of FSR for all the data
         if npeaks>1
-            FSR =  diff(lambda);   % Free spectral range (distance between peaks.   
-            FSR(end+1)=dv(length(dv)); %appending FSR's last element to itself
+            FSR =  diff(lambda0);   % Free spectral range (distance between peaks.   
+            FSR(end+1)=FSR(length(FSR)); %appending FSR's last element to itself
         else
             FSR = lambda0^2/(n_g*L);
         end
@@ -47,6 +47,7 @@ function [peakAnalysis] = resonanceAnalysis(data,pks,lambda0,param)
             E2 = E(x>minx & x <maxx);
 
             %% Measure the FWHM at the resonance
+            try
             [FWHM(i),fwhm_line] = getFWHM([x2,E2],FSR(i));
 %             figure(1); hold on; plot(data(:,1),data(:,2));
 %             plot(fwhm_line(1,:),fwhm_line(2,:)); hold off
@@ -56,6 +57,10 @@ function [peakAnalysis] = resonanceAnalysis(data,pks,lambda0,param)
             ng(i)= lambda0(i)^2/(L*FSR(i));
             alpha(i) = 2*pi*ng(i)/lambda0(i)^2*FWHM(i)*1e9; %power fraction per m
             alphadB(i) = 0.1*alpha(i)/log(10); 
+            catch EM
+               warning(EM.message) 
+            end
+                
         end
 
         %Fill output variables
